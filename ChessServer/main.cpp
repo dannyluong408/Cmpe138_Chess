@@ -109,7 +109,7 @@ void handle_message(char *buffer, const int length, Session *session) {
     		testquery:
     		int bufferPos = 0;
     		mysqlpp::Query name_query = sql_connection.query();
-    		name_query << "SELECT * FROM users WHERE wins > 10";
+    		name_query << "SELECT * FROM test WHERE wins > 10";
     		try {
     			mysqlpp::StoreQueryResult result = name_query.store();
                 if (result.num_rows() == 0){
@@ -516,7 +516,7 @@ int main() {
         do {
             conn = accept(tcp_socket, (struct sockaddr*)NULL, NULL);
             if (conn >= 0) {
-                
+                //Store connections in array
             	puts("Got a new connection");
                 Session *ptr = (Session*)malloc(sizeof(Session)*(n_connections+1));
                 if (ptr) {
