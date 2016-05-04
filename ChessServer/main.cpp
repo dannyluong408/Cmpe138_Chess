@@ -32,14 +32,7 @@ void sig_handler(const int signum) {
 	}
 }
 
-//struct for connections to store connection user-level
-struct connections{ // Todo for server side admin-style
-    int sockfd;
-    bool admin;
-};
-
-
-//sha256
+//sha256 function
 void sha256(char *string, char outputBuffer[65])
 {
     unsigned char hash[SHA256_DIGEST_LENGTH];
@@ -514,17 +507,17 @@ int main() {
         int conn;
         // Accept new connections
         do {
-            conn = accept(tcp_socket, (struct sockaddr*)NULL, NULL);
-            if (conn >= 0) {
+            conn = accept(tcp_socket, (struct sockaddr*)NULL, NULL); // Accepts new connection and stores fd in conn
+            if (conn >= 0) { // Connection isnt null?
                 //Store connections in array
             	puts("Got a new connection");
-                Session *ptr = (Session*)malloc(sizeof(Session)*(n_connections+1));
-                if (ptr) {
-                    memcpy(ptr, connections, sizeof(Session)*n_connections);
-                    ptr[n_connections] = Session(conn);
-                    free(connections);
-                    connections = ptr;
-                    n_connections++;
+                Session *ptr = (Session*)malloc(sizeof(Session)*(n_connections+1)); //expand current size of array to accomodate for new connection
+                if (ptr) { // ? 
+                    memcpy(ptr, connections, sizeof(Session)*n_connections); //copy current array of sessions to ptr
+                    ptr[n_connections] = Session(conn); //custom constructor (conn = fd) to store class into ptr array
+                    free(connections); // free old connections was a size less?
+                    connections = ptr; // set new connection to new session w/ proper size
+                    n_connections++; // increase # of connections
                 }
             }
         } while (conn > 0);
@@ -532,16 +525,18 @@ int main() {
         // Reading from socket into buffer
         char buffer[2000];
         for (int x = 0; x < n_connections; ++x) {
-            const int len = recv(connections[x].get_sockfd(), (void*)buffer, sizeof(buffer)-1, MSG_DONTWAIT);
-			const int err = errno;
-			if (errno != 11) printf("%i: %s\n", errno, strerror(err));
+            const int len = recv(connections[x].get_sockfd(), (void*)buffer, sizeof(buffer)-1, MSG_DONTWAIT); //check for message received
+			const int err = errno; // save error #
+			if (errno != 11) printf("%i: %s\n", errno, strerror(err)); // print error message
             if (len > 0) { // We got a message
                 buffer[len] = 0;
             	printf("Got msg: %s\n", buffer);
-                handle_message(buffer, len, &connections[x]);
+                handle_message(buffer, len, &connections[x]); // pass address of appropriate session array index
             } else if (len == 0) { // Our client disconnected
             	printf("Client %i disconnected\n",x);
-            	if (n_connections > 1) connections[x] = connections[n_connections-1];
+            	if (n_connections > 1) {
+                    connections[x] = connections[n_connections-1];
+                }
                 n_connections--;
             }
         }
