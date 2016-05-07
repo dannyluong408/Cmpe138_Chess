@@ -1,4 +1,6 @@
 SET foreign_key_checks = 0;
+drop database if exists chess;
+create database chess;
 use chess;
  
 -- drop table gameboard_type;
@@ -22,7 +24,6 @@ create table gameboard_type(
     name            varchar(15) not null,
     lobby_id        integer not null,
     timer           varchar(8),     #hours:minutes:seconds
-    grid_number     char(2),
     board_color     varchar(15),
     piece_color     char(15),
     primary key (lobby_id,name),
@@ -144,12 +145,12 @@ insert into lobby (lobby_id, min_skill, player_waitlist) values (2, 25, 1);
 
 #=====================================================================GAMEBOARD TYPE=====================================================================
 
-insert into gameboard_type (name, lobby_id, timer, grid_number, board_color, piece_color) values ('Jungle', 2, '00:12:00', 'A1', 'Green', 'Indigo');
-insert into gameboard_type (name, lobby_id, timer, grid_number, board_color, piece_color) values ('Ocean', 2, '01:00:00', 'F7', 'Blue', 'Pink');
-insert into gameboard_type (name, lobby_id, timer, grid_number, board_color, piece_color) values ('Rose', 2, '12:00:00', 'B3', 'Red', 'Red');
-insert into gameboard_type (name, lobby_id, timer, grid_number, board_color, piece_color) values ('Unicorn', 1, '00:03:00', 'A2', 'Violet', 'Turquoise');
-insert into gameboard_type (name, lobby_id, timer, grid_number, board_color, piece_color) values ('Basketball', 2, '00:05:00', 'B4', 'Orange', 'Purple');
-insert into gameboard_type (name, lobby_id, timer, grid_number, board_color, piece_color) values ('Ocean', 1, '00:20:00', 'C4', 'Teal', 'Blue');
+insert into gameboard_type (name, lobby_id, timer, board_color, piece_color) values ('Jungle', 2, '00:12:00', 'Green', 'Indigo');
+insert into gameboard_type (name, lobby_id, timer, board_color, piece_color) values ('Ocean', 2, '01:00:00', 'Blue', 'Pink');
+insert into gameboard_type (name, lobby_id, timer, board_color, piece_color) values ('Rose', 2, '12:00:00', 'Red', 'Red');
+insert into gameboard_type (name, lobby_id, timer, board_color, piece_color) values ('Unicorn', 1, '00:03:00', 'Violet', 'Turquoise');
+insert into gameboard_type (name, lobby_id, timer, board_color, piece_color) values ('Basketball', 2, '00:05:00', 'Orange', 'Purple');
+insert into gameboard_type (name, lobby_id, timer, board_color, piece_color) values ('Ocean', 1, '00:20:00', 'Teal', 'Blue');
 
 #=====================================================================LOBBY STATS=====================================================================
 
