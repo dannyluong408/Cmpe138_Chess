@@ -15,6 +15,7 @@
 #include <signal.h>
 #include <openssl/sha.h>
 #include "session.hpp"
+#include <null.h>
 
 //global variables
 mysqlpp::Connection sql_connection;
@@ -278,15 +279,31 @@ void handle_message(char *buffer, const int length, Session *session) {
 
     //help command
     else if ( strcmp (arg[0] , "help") == 0 && count == 1){
+        if (session->get_permissions() == true){
     	const char *help_message = "Help Menu:\n"
 								   "help -- opens help menu\n"
 								   "login -- prompts for admin user and password to login\n"
                                    "query stats username -- returns stats of that username\n"
                                    "query gamenumber gameid -- return stats of that gameid\n"
-                                   "query top10 -- returns leaderboard highest 10 ELO's\n"                               
+                                   "query top10 -- returns leaderboard highest 10 ELO's\n"
+                                   "Admin Commands:\n"
+                                   "insert [table] \"[values]\" -- ex: insert user_info \"('id','email','password','active_lobby')\"\n"
+                                   "update [table] \"[set]" "[where(optional)]\" -- ex: update user_info \"active_lobby=2\" \"id='danny'\"\n"
+                                   "delete [table] \"[where(optional)]\" -- ex: delete user_info \"id='danny'\"\n"                            
 								   "quit -- quits program";
- 		//send data to socket here
  		write(session->get_sockfd(), (void*)help_message, strlen(help_message)+1);
+        }   
+        else {
+        const char *help_message2 = "Help Menu:\n"
+                               "help -- opens help menu\n"
+                               "login -- prompts for admin user and password to login\n"
+                               "query stats username -- returns stats of that username\n"
+                               "query gamenumber gameid -- return stats of that gameid\n"
+                               "query top10 -- returns leaderboard highest 10 ELO's\n"                               
+                               "quit -- quits program";
+        write(session->get_sockfd(), (void*)help_message2, strlen(help_message2)+1);
+        }
+       
     }
 
    
@@ -570,7 +587,8 @@ int main() {
 			if (errno != 11) printf("%i: %s\n", errno, strerror(err)); // print error message
             if (len > 0) { // We got a message
                 buffer[len] = 0;
-            	printf("Got msg: %s\n", buffer);
+                printf("Message Received\n");
+            	//printf("Got msg: %s\n", buffer);
                 handle_message(buffer, len, &connections[x]); // pass address of appropriate session array index
             } else if (len == 0) { // Our client disconnected
             	printf("Client %i disconnected\n",x);
