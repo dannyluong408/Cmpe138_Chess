@@ -55,7 +55,7 @@ create table player(
     player_id       varchar(25) not null,
     skill           integer,
     player_since        char(10) not null,      #MM/DD/YYYY
-    streak          char(2),
+    streak          varchar(3),
     past_punishments    integer,
     primary key (player_id),
     foreign key (player_id) references user_info(id)
@@ -129,8 +129,8 @@ insert into player (player_since, skill, past_punishments, streak, player_id) va
 insert into player (player_since, skill, past_punishments, streak, player_id) values ('05/02/2016', 0, 0, 'NA', 'darknight1');
 insert into player (player_since, skill, past_punishments, streak, player_id) values ('05/20/2014', 53, 0, 'L1', 'blawson5');
 insert into player (player_since, skill, past_punishments, streak, player_id) values ('03/02/2016', 23, 1, 'W5', 'damarsh');
-insert into player (player_since, skill, past_punishments, streak, player_id) values ('05/24/2015', 93, 1, 'W6', 'enginerd4');
-insert into player (player_since, skill, past_punishments, streak, player_id) values ('10/19/2015', 6, 0, 'L6', 'astephens8');
+insert into player (player_since, skill, past_punishments, streak, player_id) values ('05/24/2015', 93, 1, 'W13', 'enginerd4');
+insert into player (player_since, skill, past_punishments, streak, player_id) values ('10/19/2015', 6, 0, 'L10', 'astephens8');
 insert into player (player_since, skill, past_punishments, streak, player_id) values ('08/26/2015', 32, 0, 'W1', 'cramos9');
 
 #=====================================================================DEVS=====================================================================
