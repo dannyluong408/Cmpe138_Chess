@@ -181,6 +181,9 @@ void handle_message(char *buffer, const int length, Session *session) {
             }
 
         }
+        
+        //Real Queries
+
         //All Users Info Query
         else if (strcmp(arg[1], "users") == 0 && count == 2){
         userquery:
@@ -194,17 +197,18 @@ void handle_message(char *buffer, const int length, Session *session) {
                     goto end;
                 }
                 bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%25s %40s %11s\n", "id", "email", "active_lobby");
-                
+ 
                 for (int x = 0; x < result.num_rows(); x++) {
-                    bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%25s %40s %11i\n", std::string(result[x]["id"]).c_str(), std::string(result[x]["email"]).c_str(), mysqlpp::sql_int1_null(result[x]["active_lobby"]));
+                    bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%25s %40s %11i\n", std::string(result[x]["id"]).c_str(),
+                        std::string(result[x]["email"]).c_str(), (int)(result[x]["active_lobby"]));
                 }
                 write(session->get_sockfd(), (void*)queryBuffer, bufferPos + 1);
             }
             catch (mysqlpp::BadQuery queryErr) { //Should not happen?
                 char errBuffer[2048];
-                snprintf(errBuffer, sizeof(errBuffer), "SQL reported bad query: %s\n", sql_connection.error());
+                snprintf(errBuffer, sizeof(errBuffer), "SQL reported bad query: %s. Attempting reconnect...", sql_connection.error());
                 puts(errBuffer);
-                std::cout << "Query error: " << queryErr.errnum() << std::endl;
+                std::cerr << "Query error: " << queryErr.errnum() << std::endl;
                 write(session->get_sockfd(), "Query Error. Try Again", 23);
             }
             catch (mysqlpp::ConnectionFailed badCon){
@@ -220,7 +224,317 @@ void handle_message(char *buffer, const int length, Session *session) {
                     write(session->get_sockfd(), "Connection Error", 17);
                 }
             }
-        }   
+        }
+        //End of User Info Query
+ 
+        //All Players Info Query
+        else if (strcmp(arg[1], "players") == 0 && count == 2){
+        playerquery:
+            int bufferPos = 0;
+            mysqlpp::Query name_query = sql_connection.query();
+            name_query << "SELECT p.* FROM user_info as u join player as p on u.id = p.player_id ORDER BY p.skill desc";
+            try {
+                mysqlpp::StoreQueryResult result = name_query.store();
+                if (result.num_rows() == 0){
+                    write(session->get_sockfd(), none_found, strlen(none_found) + 1);
+                    goto end;
+                }
+                bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%25s %5s %10s %6s %15s\n", "player_id", "skill",
+                                                                      "player_since", "streak", "past_punishments");
+ 
+                for (int x = 0; x < result.num_rows(); x++) {
+                    bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%25s %5i %10s %6s %15i\n", std::string(result[x]["player_id"]).c_str(),
+                        (int)(result[x]["skill"]), std::string(result[x]["player_since"]).c_str(), std::string(result[x]["streak"]).c_str(),
+                        (int)(result[x]["past_punishments"]));
+                }
+                write(session->get_sockfd(), (void*)queryBuffer, bufferPos + 1);
+            }
+            catch (mysqlpp::BadQuery queryErr) { //Should not happen?
+                char errBuffer[2048];
+                snprintf(errBuffer, sizeof(errBuffer), "SQL reported bad query: %s. Attempting reconnect...", sql_connection.error());
+                puts(errBuffer);
+                std::cerr << "Query error: " << queryErr.errnum() << std::endl;
+                write(session->get_sockfd(), "Query Error. Try Again", 23);
+            }
+            catch (mysqlpp::ConnectionFailed badCon){
+                try {
+                    sql_connection.connect(sql_db.c_str(), sql_host.c_str(), sql_user.c_str(), sql_pass.c_str(), 3307);
+                    puts("Successfully reconnected to SQL server.");
+                    goto playerquery;
+                }
+                catch (mysqlpp::ConnectionFailed sql_error) {
+                    std::string error = "SQL reconnect error: ";
+                    error += sql_error.what();
+                    puts(error.c_str());
+                    write(session->get_sockfd(), "Connection Error", 17);
+                }
+            }
+        }
+        //End of Players Info Query
+ 
+        //All Mods Info Query
+        else if (strcmp(arg[1], "mods") == 0 && count == 2){
+        modquery:
+            int bufferPos = 0;
+            mysqlpp::Query name_query = sql_connection.query();
+            name_query << "SELECT m.* FROM user_info as u JOIN moderator as m on u.id = m.mod_id ORDER BY admin_powers";
+            try {
+                mysqlpp::StoreQueryResult result = name_query.store();
+                if (result.num_rows() == 0){
+                    write(session->get_sockfd(), none_found, strlen(none_found) + 1);
+                    goto end;
+                }
+                bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%15s %15s %25s %15s\n", "fname", "lname", "mod_id", "admin_powers");
+ 
+                for (int x = 0; x < result.num_rows(); x++) {
+                    bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%15s %15s %25s %15s\n", std::string(result[x]["fname"]).c_str(),
+                        std::string(result[x]["lname"]).c_str(), std::string(result[x]["mod_id"]).c_str(), std::string(result[x]["admin_powers"]).c_str());
+                }
+                write(session->get_sockfd(), (void*)queryBuffer, bufferPos + 1);
+            }
+            catch (mysqlpp::BadQuery queryErr) { //Should not happen?
+                char errBuffer[2048];
+                snprintf(errBuffer, sizeof(errBuffer), "SQL reported bad query: %s. Attempting reconnect...", sql_connection.error());
+                puts(errBuffer);
+                std::cerr << "Query error: " << queryErr.errnum() << std::endl;
+                write(session->get_sockfd(), "Query Error. Try Again", 23);
+            }
+            catch (mysqlpp::ConnectionFailed badCon){
+                try {
+                    sql_connection.connect(sql_db.c_str(), sql_host.c_str(), sql_user.c_str(), sql_pass.c_str(), 3307);
+                    puts("Successfully reconnected to SQL server.");
+                    goto modquery;
+                }
+                catch (mysqlpp::ConnectionFailed sql_error) {
+                    std::string error = "SQL reconnect error: ";
+                    error += sql_error.what();
+                    puts(error.c_str());
+                    write(session->get_sockfd(), "Connection Error", 17);
+                }
+            }
+        }
+        //End of Mods Info Query
+ 
+        //All Devs Info Query
+        else if (strcmp(arg[1], "devs") == 0 && count == 2){
+        devquery:
+            int bufferPos = 0;
+            mysqlpp::Query name_query = sql_connection.query();
+            name_query << "SELECT d.* FROM developer as d JOIN user_info as u on d.dev_id = u.id ORDER BY dev_rights";
+            try {
+                mysqlpp::StoreQueryResult result = name_query.store();
+                if (result.num_rows() == 0){
+                    write(session->get_sockfd(), none_found, strlen(none_found) + 1);
+                    goto end;
+                }
+                bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%15s %15s %25s %15s\n", "fname", "lname", "dev_id", "dev_rights");
+ 
+                for (int x = 0; x < result.num_rows(); x++) {
+                    bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%15s %15s %25s %15s\n", std::string(result[x]["fname"]).c_str(),
+                        std::string(result[x]["lname"]).c_str(), std::string(result[x]["dev_id"]).c_str(), std::string(result[x]["dev_rights"]).c_str());
+                }
+                write(session->get_sockfd(), (void*)queryBuffer, bufferPos + 1);
+            }
+            catch (mysqlpp::BadQuery queryErr) { //Should not happen?
+                char errBuffer[2048];
+                snprintf(errBuffer, sizeof(errBuffer), "SQL reported bad query: %s. Attempting reconnect...", sql_connection.error());
+                puts(errBuffer);
+                std::cerr << "Query error: " << queryErr.errnum() << std::endl;
+                write(session->get_sockfd(), "Query Error. Try Again", 23);
+            }
+            catch (mysqlpp::ConnectionFailed badCon){
+                try {
+                    sql_connection.connect(sql_db.c_str(), sql_host.c_str(), sql_user.c_str(), sql_pass.c_str(), 3307);
+                    puts("Successfully reconnected to SQL server.");
+                    goto devquery;
+                }
+                catch (mysqlpp::ConnectionFailed sql_error) {
+                    std::string error = "SQL reconnect error: ";
+                    error += sql_error.what();
+                    puts(error.c_str());
+                    write(session->get_sockfd(), "Connection Error", 17);
+                }
+            }
+        }
+        //End of Devs Info Query
+ 
+        //All Lobbies Info Query
+        else if (strcmp(arg[1], "lobbies") == 0 && count == 2){
+        lobbyquery:
+            int bufferPos = 0;
+            mysqlpp::Query name_query = sql_connection.query();
+            name_query << "SELECT lobby_id, min_skill FROM lobby ORDER BY lobby_id";
+            try {
+                mysqlpp::StoreQueryResult result = name_query.store();
+                if (result.num_rows() == 0){
+                    write(session->get_sockfd(), none_found, strlen(none_found) + 1);
+                    goto end;
+                }
+                bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%8s %9s\n", "lobby_id", "min_skill");
+ 
+                for (int x = 0; x < result.num_rows(); x++) {
+                    bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%8i %9i\n", (int)(result[x]["lobby_id"]),
+                        (int)(result[x]["min_skill"]));
+                }
+                write(session->get_sockfd(), (void*)queryBuffer, bufferPos + 1);
+            }
+            catch (mysqlpp::BadQuery queryErr) { //Should not happen?
+                char errBuffer[2048];
+                snprintf(errBuffer, sizeof(errBuffer), "SQL reported bad query: %s. Attempting reconnect...", sql_connection.error());
+                puts(errBuffer);
+                std::cerr << "Query error: " << queryErr.errnum() << std::endl;
+                write(session->get_sockfd(), "Query Error. Try Again", 23);
+            }
+            catch (mysqlpp::ConnectionFailed badCon){
+                try {
+                    sql_connection.connect(sql_db.c_str(), sql_host.c_str(), sql_user.c_str(), sql_pass.c_str(), 3307);
+                    puts("Successfully reconnected to SQL server.");
+                    goto lobbyquery;
+                }
+                catch (mysqlpp::ConnectionFailed sql_error) {
+                    std::string error = "SQL reconnect error: ";
+                    error += sql_error.what();
+                    puts(error.c_str());
+                    write(session->get_sockfd(), "Connection Error", 17);
+                }
+            }
+        }
+        //End of Lobbies Info Query
+ 
+        //All Lobby Stats
+        else if (strcmp(arg[1], "lobby_stats") == 0 && count == 2){
+        statsquery:
+            int bufferPos = 0;
+            mysqlpp::Query name_query = sql_connection.query();
+            name_query << "SELECT s.* FROM lobby_stats as s join lobby as l on s.stat_id = l.lobby_id ORDER BY l.lobby_id";
+            try {
+                mysqlpp::StoreQueryResult result = name_query.store();
+                if (result.num_rows() == 0){
+                    write(session->get_sockfd(), none_found, strlen(none_found) + 1);
+                    goto end;
+                }
+                bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%7s %14s %12s %12s %12s %18s %12s\n",
+                    "stat_id", "games_in_lobby", "avg_gametime", "pieces_taken", "avg_movetime", "avg_moves_per_game", "users_joined");
+ 
+                for (int x = 0; x < result.num_rows(); x++) {
+                    bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%7i %14i %12s %12i %12s %18f %12i\n", (int)(result[x]["stat_id"]),
+                        (int)(result[x]["games_in_lobby"]), std::string(result[x]["avg_gametime"]).c_str(), (int)(result[x]["pieces_taken"]), std::string(result[x]["avg_movetime"]).c_str(),
+                        (float)(result[x]["avg_moves_per_game"]), (int)(result[x]["users_joined"]));
+                }
+                write(session->get_sockfd(), (void*)queryBuffer, bufferPos + 1);
+            }
+            catch (mysqlpp::BadQuery queryErr) { //Should not happen?
+                char errBuffer[2048];
+                snprintf(errBuffer, sizeof(errBuffer), "SQL reported bad query: %s. Attempting reconnect...", sql_connection.error());
+                puts(errBuffer);
+                std::cerr << "Query error: " << queryErr.errnum() << std::endl;
+                write(session->get_sockfd(), "Query Error. Try Again", 23);
+            }
+            catch (mysqlpp::ConnectionFailed badCon){
+                try {
+                    sql_connection.connect(sql_db.c_str(), sql_host.c_str(), sql_user.c_str(), sql_pass.c_str(), 3307);
+                    puts("Successfully reconnected to SQL server.");
+                    goto statsquery;
+                }
+                catch (mysqlpp::ConnectionFailed sql_error) {
+                    std::string error = "SQL reconnect error: ";
+                    error += sql_error.what();
+                    puts(error.c_str());
+                    write(session->get_sockfd(), "Connection Error", 17);
+                }
+            }
+        }
+        //End Lobby Stats
+ 
+        //All Gameboard Types
+        else if (strcmp(arg[1], "boards") == 0 && count == 2){
+        boardquery:
+            int bufferPos = 0;
+            mysqlpp::Query name_query = sql_connection.query();
+            name_query << "SELECT * FROM gameboard_type";
+            try {
+                mysqlpp::StoreQueryResult result = name_query.store();
+                if (result.num_rows() == 0){
+                    write(session->get_sockfd(), none_found, strlen(none_found) + 1);
+                    goto end;
+                }
+                bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%15s %8s %8s %15s %15s\n",
+                    "name", "lobby_id", "timer", "board_color", "piece_color");
+ 
+                for (int x = 0; x < result.num_rows(); x++) {
+                    bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%15s %8i %8s %15s %15s\n", std::string(result[x]["name"]).c_str(),
+                        (int)(result[x]["lobby_id"]), std::string(result[x]["timer"]).c_str(), std::string(result[x]["board_color"]).c_str(),
+                        std::string(result[x]["piece_color"]).c_str());
+                }
+                write(session->get_sockfd(), (void*)queryBuffer, bufferPos + 1);
+            }
+            catch (mysqlpp::BadQuery queryErr) { //Should not happen?
+                char errBuffer[2048];
+                snprintf(errBuffer, sizeof(errBuffer), "SQL reported bad query: %s. Attempting reconnect...", sql_connection.error());
+                puts(errBuffer);
+                std::cerr << "Query error: " << queryErr.errnum() << std::endl;
+                write(session->get_sockfd(), "Query Error. Try Again", 23);
+            }
+            catch (mysqlpp::ConnectionFailed badCon){
+                try {
+                    sql_connection.connect(sql_db.c_str(), sql_host.c_str(), sql_user.c_str(), sql_pass.c_str(), 3307);
+                    puts("Successfully reconnected to SQL server.");
+                    goto boardquery;
+                }
+                catch (mysqlpp::ConnectionFailed sql_error) {
+                    std::string error = "SQL reconnect error: ";
+                    error += sql_error.what();
+                    puts(error.c_str());
+                    write(session->get_sockfd(), "Connection Error", 17);
+                }
+            }
+        }
+        //End Gameboard Types
+ 
+        //All Game History
+        else if (strcmp(arg[1], "game_history") == 0 && count == 2){
+        historyquery:
+            int bufferPos = 0;
+            mysqlpp::Query name_query = sql_connection.query();
+            name_query << "SELECT match_id, avg_movetime, match_length, replay_id, elo_change, winner, date_time, l_id FROM game_history GROUP BY winner";
+            try {
+                mysqlpp::StoreQueryResult result = name_query.store();
+                if (result.num_rows() == 0){
+                    write(session->get_sockfd(), none_found, strlen(none_found) + 1);
+                    goto end;
+                }
+                bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%8s %8s %8s %9s %10s %15s %19s %4s\n",
+                    "match_id", "avg_movetime", "match_length", "replay_id", "elo_change", "winner", "date_time", "l_id");
+ 
+                for (int x = 0; x < result.num_rows(); x++) {
+                    bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%8i %8s %8s %9i %10i %15s %19s %4i\n", (int)(result[x]["match_id"]),
+                        std::string(result[x]["avg_movetime"]).c_str(), (int)(result[x]["match_length"]), (int)(result[x]["replay_id"]), (int)(result[x]["elo_change"]),
+                        std::string(result[x]["winner"]).c_str(), std::string(result[x]["date_time"]).c_str(), (int)(result[x]["l_id"]));
+                }
+                write(session->get_sockfd(), (void*)queryBuffer, bufferPos + 1);
+            }
+            catch (mysqlpp::BadQuery queryErr) { //Should not happen?
+                char errBuffer[2048];
+                snprintf(errBuffer, sizeof(errBuffer), "SQL reported bad query: %s. Attempting reconnect...", sql_connection.error());
+                puts(errBuffer);
+                std::cerr << "Query error: " << queryErr.errnum() << std::endl;
+                write(session->get_sockfd(), "Query Error. Try Again", 23);
+            }
+            catch (mysqlpp::ConnectionFailed badCon){
+                try {
+                    sql_connection.connect(sql_db.c_str(), sql_host.c_str(), sql_user.c_str(), sql_pass.c_str(), 3307);
+                    puts("Successfully reconnected to SQL server.");
+                    goto historyquery;
+                }
+                catch (mysqlpp::ConnectionFailed sql_error) {
+                    std::string error = "SQL reconnect error: ";
+                    error += sql_error.what();
+                    puts(error.c_str());
+                    write(session->get_sockfd(), "Connection Error", 17);
+                }
+            }
+        }
+        //End Game History
 
         /*Template
         else if ( strcmp (arg[1] , "stats") == 0 && count == 3){ //edit these params to fit needs
