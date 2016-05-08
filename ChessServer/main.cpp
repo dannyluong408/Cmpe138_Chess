@@ -447,7 +447,7 @@ void handle_message(char *buffer, const int length, Session *session) {
         //End Lobby Stats
  
         //All Gameboard Types
-        else if (strcmp(arg[1], "boards") == 0 && count == 2){
+        else if (strcmp(arg[1], "gameboard_type") == 0 && count == 2){
         boardquery:
             int bufferPos = 0;
             mysqlpp::Query name_query = sql_connection.query();
@@ -508,7 +508,7 @@ void handle_message(char *buffer, const int length, Session *session) {
  
                 for (int x = 0; x < result.num_rows(); x++) {
                     bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%8i %8s %8s %9i %10i %15s %19s %4i\n", (int)(result[x]["match_id"]),
-                        std::string(result[x]["avg_movetime"]).c_str(), (int)(result[x]["match_length"]), (int)(result[x]["replay_id"]), (int)(result[x]["elo_change"]),
+                        std::string(result[x]["avg_movetime"]).c_str(), std::string(result[x]["match_length"]).c_str(), (int)(result[x]["replay_id"]), (int)(result[x]["elo_change"]),
                         std::string(result[x]["winner"]).c_str(), std::string(result[x]["date_time"]).c_str(), (int)(result[x]["l_id"]));
                 }
                 write(session->get_sockfd(), (void*)queryBuffer, bufferPos + 1);
