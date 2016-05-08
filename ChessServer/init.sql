@@ -1,17 +1,16 @@
 SET foreign_key_checks = 0;
-drop database if exists chess;
-create database chess;
+-- drop database if exists chess;
+-- create database chess;
 use chess;
  
--- drop table gameboard_type;
--- drop table developer;
--- drop table lobby_stats;
--- drop table moderator;
--- drop table viewer_slot;
--- drop table game_history;
--- drop table player;
--- drop table user_info;
--- drop table lobby;
+ drop table gameboard_type;
+ drop table developer;
+ drop table lobby_stats;
+ drop table moderator;
+ drop table game_history;
+ drop table player;
+ drop table user_info;
+ drop table lobby;
  
 create table lobby(
         lobby_id        integer not null,
@@ -48,7 +47,8 @@ create table user_info(
     password        char(64),            #char 64 for sha256
     active_lobby        integer,
     unique (email),
-    primary key (id)
+    primary key (id),
+	foreign key (active_lobby) references lobby(lobby_id)   
 );
  
 create table player(
@@ -96,36 +96,42 @@ create table moderator(
  
 SET foreign_key_checks = 1;
 
+#=====================================================================LOBBY=====================================================================
+
+insert into lobby (lobby_id, min_skill, player_waitlist) values (1, 1, 3);
+insert into lobby (lobby_id, min_skill, player_waitlist) values (2, 25, 1);
+insert into lobby (lobby_id, min_skill, player_waitlist) values (0, 0, 0);
+
 #=====================================================================USERS=====================================================================
 
 insert into user_info (id, email, password, active_lobby) values ('vasquo', 'lvasquez0@yahoo.co.jp', 'c3973cb9194c1b7ac13bc03c3ff1e80dccbaa00bc455dc74679125119472675c', 1);
 insert into user_info (id, email, password, active_lobby) values ('agarrett1', 'dweaver1@artisteer.com', '4904e2f6bfaef020c6fd0f97398c7cd5bb3bd066fb0601646c91505aea195628', 2);
-insert into user_info (id, email, password, active_lobby) values ('rgreene2', 'rgreene2@chicagotribune.com', 'e90bb43dd00e4b9c2feafe726ed3deb15dbda8b10b218ee9c2d3ac7e3c5eecb1', NULL);
-insert into user_info (id, email, password, active_lobby) values ('jwallace3', 'hgreene3@studiopress.com', '72f0d11aaf4dbfa6d90865cc2ddeaee5705ba8487ee69ef7c11e88f6a42a0d7d', NULL);
+insert into user_info (id, email, password, active_lobby) values ('rgreene2', 'rgreene2@chicagotribune.com', 'e90bb43dd00e4b9c2feafe726ed3deb15dbda8b10b218ee9c2d3ac7e3c5eecb1', 0);
+insert into user_info (id, email, password, active_lobby) values ('jwallace3', 'hgreene3@studiopress.com', '72f0d11aaf4dbfa6d90865cc2ddeaee5705ba8487ee69ef7c11e88f6a42a0d7d', 0);
 insert into user_info (id, email, password, active_lobby) values ('darknight1', 'jcarr4@discuz.net', '6acd86ac6cc424e4b5b0499f95f83238e9d18d445c83e1b5b939b862953a3d52', 2);
 insert into user_info (id, email, password, active_lobby) values ('blawson5', 'arodriguez5@posterous.com', '1eb31c31180e0354a5888bb91af23b34bab8c0a91359ffd1b8163d971a6fa420', 2);
 insert into user_info (id, email, password, active_lobby) values ('enginerd4', 'rhill6@edublogs.org', 'c46c7138780f2bac09b940d85117917869e342952d2ccab9cebf1b7f3064607b', 2);
 insert into user_info (id, email, password, active_lobby) values ('damarsh', 'dmarshall7@amazon.com', '5c478bcf8410a4461f3a15993f9d47f15bfcefe720329f3859eacf2c027e6635', 1);
-insert into user_info (id, email, password, active_lobby) values ('astephens8', 'awagner8@wp.com', '86970ca14a7060b9400e3910d2e8a3fb57ca1f52eb8a307850b727365d680e13', NULL);
+insert into user_info (id, email, password, active_lobby) values ('astephens8', 'awagner8@wp.com', '86970ca14a7060b9400e3910d2e8a3fb57ca1f52eb8a307850b727365d680e13', 0);
 insert into user_info (id, email, password, active_lobby) values ('cramos9', 'cramos9@stanford.edu', '24cd89673ad5ca0c4b6f89ac403cb3788c708530f8919f25542ec8974c532401', 2);
-insert into user_info (id, email, password, active_lobby) values ('bgrahama', 'mmoralesa@sogou.com', 'c4e52bddfb2eb08191ddd4acfdc34339c4c68280236c1f05338d8f5cdddf261c', NULL);
+insert into user_info (id, email, password, active_lobby) values ('bgrahama', 'mmoralesa@sogou.com', 'c4e52bddfb2eb08191ddd4acfdc34339c4c68280236c1f05338d8f5cdddf261c', 0);
 insert into user_info (id, email, password, active_lobby) values ('rufflife', 'amendozab@sfgate.com', 'f5704a4ba375ebf5c29ce3a02c7b631390c70a7cfe681dc7651328d22c51af47', 1);
 insert into user_info (id, email, password, active_lobby) values ('ljamesc', 'scampbellc@examiner.com', '6be7c8a09fdde88f8fdcb6cc654c5486a21ba3830ff3c6d64ff95d16522f1c54', 2);
 insert into user_info (id, email, password, active_lobby) values ('crusselld', 'iallend@google.pl', '5faa5ad144c7d441e396a613cab60379794889724e9cafa1940875bd243ff855', 2);
-insert into user_info (id, email, password, active_lobby) values ('lwebbe', 'molivere@skype.com', '963aeb2af1bc41e881342f6b553adc6c73e9168bb63b86179b36040c1f6ccdd3', NULL);
+insert into user_info (id, email, password, active_lobby) values ('lwebbe', 'molivere@skype.com', '963aeb2af1bc41e881342f6b553adc6c73e9168bb63b86179b36040c1f6ccdd3', 0);
 
 #=====================================================================PLAYERS=====================================================================
 
 insert into player (player_since, skill, past_punishments, streak, player_id) values ('12/14/2015', 18, 4, 'L3', 'vasquo');
-insert into player (player_since, skill, past_punishments, streak, player_id) values ('01/30/2016', 46, NULL, 'L2', 'agarrett1');
+insert into player (player_since, skill, past_punishments, streak, player_id) values ('01/30/2016', 46, 0, 'L2', 'agarrett1');
 insert into player (player_since, skill, past_punishments, streak, player_id) values ('10/05/2014', 1, 2, 'W1', 'rgreene2');
-insert into player (player_since, skill, past_punishments, streak, player_id) values ('04/13/2016', NULL, NULL, NULL, 'jwallace3');
-insert into player (player_since, skill, past_punishments, streak, player_id) values ('05/02/2016', NULL, NULL, NULL, 'darknight1');
-insert into player (player_since, skill, past_punishments, streak, player_id) values ('05/20/2014', 53, NULL, 'L1', 'blawson5');
+insert into player (player_since, skill, past_punishments, streak, player_id) values ('04/13/2016', 0, 0, 'NA', 'jwallace3');
+insert into player (player_since, skill, past_punishments, streak, player_id) values ('05/02/2016', 0, 0, 'NA', 'darknight1');
+insert into player (player_since, skill, past_punishments, streak, player_id) values ('05/20/2014', 53, 0, 'L1', 'blawson5');
 insert into player (player_since, skill, past_punishments, streak, player_id) values ('03/02/2016', 23, 1, 'W5', 'damarsh');
 insert into player (player_since, skill, past_punishments, streak, player_id) values ('05/24/2015', 93, 1, 'W6', 'enginerd4');
-insert into player (player_since, skill, past_punishments, streak, player_id) values ('10/19/2015', 6, NULL, 'L6', 'astephens8');
-insert into player (player_since, skill, past_punishments, streak, player_id) values ('08/26/2015', 32, NULL, 'W1', 'cramos9');
+insert into player (player_since, skill, past_punishments, streak, player_id) values ('10/19/2015', 6, 0, 'L6', 'astephens8');
+insert into player (player_since, skill, past_punishments, streak, player_id) values ('08/26/2015', 32, 0, 'W1', 'cramos9');
 
 #=====================================================================DEVS=====================================================================
 
@@ -137,11 +143,6 @@ insert into developer (fname, lname, dev_id, dev_rights) values ('Larry', 'James
 
 insert into moderator (fname, lname, mod_id, admin_powers) values ('Christina', 'Russell', 'crusselld', 'Full');
 insert into moderator (fname, lname, mod_id, admin_powers) values ('Lou', 'Webbe', 'lwebbe', 'Limited');
-
-#=====================================================================LOBBY=====================================================================
-
-insert into lobby (lobby_id, min_skill, player_waitlist) values (1, 1, 3);
-insert into lobby (lobby_id, min_skill, player_waitlist) values (2, 25, 1);
 
 #=====================================================================GAMEBOARD TYPE=====================================================================
 
