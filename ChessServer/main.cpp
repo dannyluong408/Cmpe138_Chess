@@ -594,27 +594,37 @@ void handle_message(char *buffer, const int length, Session *session) {
     //help command
     else if ( strcmp (arg[0] , "help") == 0 && count == 1){
         if (session->get_permissions() == true){
-    	const char *help_message = "Help Menu:\n"
-								   "help -- opens help menu\n"
-								   "login -- prompts for admin user and password to login\n"
-                                   "query stats username -- returns stats of that username\n"
-                                   "query gamenumber gameid -- return stats of that gameid\n"
-                                   "query top10 -- returns leaderboard highest 10 ELO's\n"
-                                   "Admin Commands:\n"
-                                   "insert [table] \"[values]\" -- ex: insert user_info \"('id','email','password','active_lobby')\"\n"
-                                   "update [table] \"[set]" "[where(optional)]\" -- ex: update user_info \"active_lobby=2\" \"id='danny'\"\n"
-                                   "delete [table] \"[where(optional)]\" -- ex: delete user_info \"id='danny'\"\n"                            
-								   "quit -- quits program";
+    	const char *help_message =  "Help Menu:\n"
+								    "help -- opens help menu\n"
+                                    "query users -- returns info for all users\n"
+                                    "query players -- returns info for all players\n"
+                                    "query mods -- returns info for all mods\n"
+                                    "query devs -- returns info for all devs\n"
+                                    "query lobbies -- returns info for all lobbies\n"
+                                    "query lobby_stats -- returns stats of all lobbies\n"
+                                    "query gameboard_type -- returns info for all gameboard types\n"
+                                    "query game_history -- returns all game history\n"
+                                    "login -- prompts for admin user and password to login\n"
+                                    "Admin Commands:\n"
+                                    "insert [table] \"[values]\" -- ex: insert user_info \"('id','email','password','active_lobby')\"\n"
+                                    "update [table] \"[set]" "[where(optional)]\" -- ex: update user_info \"active_lobby=2\" \"id='danny'\"\n"
+                                    "delete [table] \"[where(optional)]\" -- ex: delete user_info \"id='danny'\"\n"                            
+                                    "quit -- quits program";
  		write(session->get_sockfd(), (void*)help_message, strlen(help_message)+1);
         }   
         else {
         const char *help_message2 = "Help Menu:\n"
-                               "help -- opens help menu\n"
-                               "login -- prompts for admin user and password to login\n"
-                               "query stats username -- returns stats of that username\n"
-                               "query gamenumber gameid -- return stats of that gameid\n"
-                               "query top10 -- returns leaderboard highest 10 ELO's\n"                               
-                               "quit -- quits program";
+                                    "help -- opens help menu\n"
+                                    "query users -- returns info for all users\n"
+                                    "query players -- returns info for all players\n"
+                                    "query mods -- returns info for all mods\n"
+                                    "query devs -- returns info for all devs\n"
+                                    "query lobbies -- returns info for all lobbies\n"
+                                    "query lobby_stats -- returns stats of all lobbies\n"
+                                    "query gameboard_type -- returns info for all gameboard types\n"
+                                    "query game_history -- returns all game history\n"
+                                    "login -- prompts for admin user and password to login\n"                               
+                                    "quit -- quits program";
         write(session->get_sockfd(), (void*)help_message2, strlen(help_message2)+1);
         }
        
