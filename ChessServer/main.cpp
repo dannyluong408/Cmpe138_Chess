@@ -15,7 +15,6 @@
 #include <signal.h>
 #include <openssl/sha.h>
 #include "session.hpp"
-#include <null.h>
 
 //global variables
 mysqlpp::Connection sql_connection;
@@ -24,13 +23,13 @@ bool quit = false;
 
 //Catchs exit signal to close connections before program closes
 void sig_handler(const int signum) { 
-	puts("\nGot interrupt signal."); 
-	if (signum == SIGINT)
-	{
+    puts("\nGot interrupt signal."); 
+    if (signum == SIGINT)
+    {
         //Closes all connections before exit
-		printf("SIGINT Received, Closing\n");
-		quit = true;
-	}
+        printf("SIGINT Received, Closing\n");
+        quit = true;
+    }
 }
 
 //sha256 function
@@ -86,38 +85,41 @@ void handle_message(char *buffer, const int length, Session *session) {
         if (test == 2 && strcmp (arg[0] , "login") == 0){
         std::cout << "Paramter [" << test+1 << "] :Password Hidden" << std::endl;    
         }
+        else if (test == 3 && strcmp (arg[0] , "create") == 0){
+        std::cout << "Paramter [" << test+1 << "] :Password Hidden" << std::endl;    
+        }
         else
         std::cout << "Paramter [" << test+1 << "] :" << arg[test] << std::endl;
     }
 
-	char queryBuffer[5000]; //Buffer to store query results in
+    char queryBuffer[5000]; //Buffer to store query results in
 
  
 
     //Query Commands 
     if ( strcmp( arg[0] , "query") == 0 && (count == 2 || count == 3)){
-    	const char *none_found = "No entries found!";
+        const char *none_found = "No entries found!";
 
         //Sample Test Query
         if ( strcmp (arg[1] , "test") == 0 && count == 2){
-    		testquery:
-    		int bufferPos = 0;
-    		mysqlpp::Query name_query = sql_connection.query();
-    		name_query << "SELECT * FROM test WHERE wins > 10";
-    		try {
-    			mysqlpp::StoreQueryResult result = name_query.store();
+            testquery:
+            int bufferPos = 0;
+            mysqlpp::Query name_query = sql_connection.query();
+            name_query << "SELECT * FROM test WHERE wins > 10";
+            try {
+                mysqlpp::StoreQueryResult result = name_query.store();
                 if (result.num_rows() == 0){
                     write(session->get_sockfd(), none_found, strlen(none_found)+1);
                     goto end;
                 }
-    			bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer) - bufferPos, "%15s %8s %8s\n", "name", "games", "wins");
+                bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer) - bufferPos, "%15s %8s %8s\n", "name", "games", "wins");
 
-    			for (int x = 0; x < result.num_rows(); x++) {
-    				bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos,"%15s %8i %8i\n", std::string(result[x]["name"]).c_str(), (int)result[x]["games"], (int)result[x]["wins"]);
-    			}
-    			write(session->get_sockfd(), (void*)queryBuffer, bufferPos+1);
-    		}
-    		 catch (mysqlpp::BadQuery queryErr) { //Should not happen?
+                for (int x = 0; x < result.num_rows(); x++) {
+                    bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos,"%15s %8i %8i\n", std::string(result[x]["name"]).c_str(), (int)result[x]["games"], (int)result[x]["wins"]);
+                }
+                write(session->get_sockfd(), (void*)queryBuffer, bufferPos+1);
+            }
+             catch (mysqlpp::BadQuery queryErr) { //Should not happen?
                 char errBuffer[2048];
                 snprintf(errBuffer, sizeof(errBuffer), "SQL reported bad query: %s. Attempting reconnect...", sql_connection.error());
                 puts(errBuffer);
@@ -594,8 +596,8 @@ void handle_message(char *buffer, const int length, Session *session) {
     //help command
     else if ( strcmp (arg[0] , "help") == 0 && count == 1){
         if (session->get_permissions() == true){
-    	const char *help_message =  "Help Menu:\n"
-								    "help -- opens help menu\n"
+        const char *help_message =  "Help Menu:\n"
+                                    "help -- opens help menu\n"
                                     "query users -- returns info for all users\n"
                                     "query players -- returns info for all players\n"
                                     "query mods -- returns info for all mods\n"
@@ -607,10 +609,11 @@ void handle_message(char *buffer, const int length, Session *session) {
                                     "login -- prompts for admin user and password to login\n"
                                     "Admin Commands:\n"
                                     "insert [table] \"[values]\" -- ex: insert user_info \"('id','email','password','active_lobby')\"\n"
-                                    "update [table] \"[set]" "[where(optional)]\" -- ex: update user_info \"active_lobby=2\" \"id='danny'\"\n"
-                                    "delete [table] \"[where(optional)]\" -- ex: delete user_info \"id='danny'\"\n"                            
+                                    "update [table] \"[set]\" \"[where(optional)]\" -- ex: update user_info \"active_lobby=2\" \"id='danny'\"\n"
+                                    "delete [table] \"[where(optional)]\" -- ex: delete user_info \"id='danny'\"\n"
+                                    "create -- prompts for username,email,password\n"                            
                                     "quit -- quits program";
- 		write(session->get_sockfd(), (void*)help_message, strlen(help_message)+1);
+        write(session->get_sockfd(), (void*)help_message, strlen(help_message)+1);
         }   
         else {
         const char *help_message2 = "Help Menu:\n"
@@ -630,22 +633,30 @@ void handle_message(char *buffer, const int length, Session *session) {
        
     }
 
-   
+    
     //admin login command w/ sha256  
     else if (strcmp (arg[0] , "login") == 0 && count == 3){
+        //chessadmin/cmpe138danny
         static char sha256key[65];
         sha256(arg[2], sha256key);
-        //chessadmin/cmpe138danny
+        std::cout << sha256key << std::endl;
         if ((strcmp (arg[1] , "chessadmin") == 0 && strcmp (sha256key , "409c7307b6fc6bae4aa41a56ca9603505f1e07d90b800bd08dcb7b6093a05bae") == 0 )){
-    		const char *login_auth = "Login Sucessful!";
+            const char *login_auth = "Login Sucessful!";
             //set admin flag for connection
             session->set_permissions(true);
-    		write(session->get_sockfd(), (void*)login_auth, strlen(login_auth) + 1);             //send data to socket here
+            write(session->get_sockfd(), (void*)login_auth, strlen(login_auth) + 1);             //send data to socket here
+        }
+        //danny/1234
+        else if ((strcmp (arg[1] , "danny") == 0 && strcmp (sha256key , "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4") == 0 )){
+            const char *login_auth = "Login Sucessful!";
+            //set admin flag for connection
+            session->set_permissions(true);
+            write(session->get_sockfd(), (void*)login_auth, strlen(login_auth) + 1);             //send data to socket here
         }
         else {
             write(session->get_sockfd(), "Invalid login!", 15);
         }
-	}
+    }
 
     else if (strcmp (arg[0] , "logout") == 0 && count == 1){
         //check if user was admin
@@ -653,6 +664,48 @@ void handle_message(char *buffer, const int length, Session *session) {
         session->set_permissions(false);
         //session[x].set_permissions(false);
         write(session->get_sockfd(), "Logged Out!", 12);
+    }
+
+    //admin acc create - create username email password
+    else if (strcmp (arg[0] , "create") == 0 && count == 4){
+        //check if user is admin
+        if (session->get_permissions() == false){
+            write(session->get_sockfd(), "You are not an admin!", 23);
+            return;
+        }
+
+        static char passwd[65];
+        sha256(arg[3], passwd);
+
+        //plaintext admin stuff to mysql
+        //arg[1] = plaintext mysql command
+        mysqlpp::Query create_query = sql_connection.query();
+
+        try{
+            std::cout << "Okay" << std::endl;
+            std::cout << "INSERT INTO user_info VALUES ('" << arg[1] <<"','"<< arg[2] << "','" << passwd << "','0')"<< ";" << std::endl;
+            create_query << "INSERT INTO user_info VALUES ('"<<arg[1] <<"','"<< arg[2] << "','" << passwd << "','0')"<< ";";
+            create_query.execute();
+        }
+        catch (mysqlpp::BadQuery er) { // handle any connection or
+        // query errors that may come up
+        std::cout << "Error: " << er.what() << std::endl;
+            write(session->get_sockfd(), "Error syntax/bad values!", 25);
+            goto end;
+        } catch (const mysqlpp::BadConversion& er) {
+        // Handle bad conversions
+        std::cerr << "Conversion error: " << er.what() << std::endl <<
+                "\tretrieved data size: " << er.retrieved <<
+                ", actual size: " << er.actual_size << std::endl;
+            write(session->get_sockfd(), "Error syntax/bad values!", 25);
+            goto end;
+        } catch (const mysqlpp::Exception& er) {
+        // Catch-all for any other MySQL++ exceptions
+        std::cerr << "Error: " << er.what() << std::endl;
+            write(session->get_sockfd(), "Error syntax/bad values!", 25);
+            goto end;
+        }
+        write(session->get_sockfd(), "Insert Sucess!", 15);
     }
 
 
@@ -727,14 +780,14 @@ void handle_message(char *buffer, const int length, Session *session) {
         strcpy(rawUpdate2, arg[3]);
 
         //Testing purposes
-        std::cout << "R1: " << arg[2] << " vs " << rawUpdate << std::endl;
+        //std::cout << "R1: " << arg[2] << " vs " << rawUpdate << std::endl;
         //Removes Quotations
         for (int i = 0; i < strlen(rawUpdate); i++){
         rawUpdate[i] = rawUpdate[i+1];
         }
         rawUpdate[strlen(rawUpdate)-1] = '\0';
         //Testing Purposes
-        std::cout << "R2: " << arg[2] << " vs " << rawUpdate << std::endl;
+        //std::cout << "R2: " << arg[2] << " vs " << rawUpdate << std::endl;
 
         if (count == 4){
             //Testing purposes
@@ -843,10 +896,10 @@ void handle_message(char *buffer, const int length, Session *session) {
     }
 
     //bad command
-	else
-	{
-		write(session->get_sockfd(), "Invalid command! Type \"help\" for help.", 39);
-	}
+    else
+    {
+        write(session->get_sockfd(), "Invalid command! Type \"help\" for help.", 39);
+    }
 
     end:
     free(data);
@@ -856,8 +909,8 @@ void handle_message(char *buffer, const int length, Session *session) {
 
 int main() {
     //Sig Handler Error Check
-	if (signal(SIGINT, sig_handler) == SIG_ERR)
-		printf("\ncan't catch SIGINT\n");
+    if (signal(SIGINT, sig_handler) == SIG_ERR)
+        printf("\ncan't catch SIGINT\n");
 
     //Set up server side socket
     int tcp_socket = socket(AF_INET, SOCK_STREAM | O_NONBLOCK, 0);
@@ -871,17 +924,21 @@ int main() {
    
     if (bind(tcp_socket, (struct sockaddr*)&server_address, sizeof(server_address))) {
         puts("Call to bind failed.");
+        const int bindErr = errno; // save error #
+        printf("%i: %s\n", errno, strerror(bindErr)); // print error message
         return -1;
     }
     if (listen(tcp_socket, 128)) {
         puts("Call to listen failed.");
+        const int listenErr = errno; // save error #
+        printf("%i: %s\n", errno, strerror(listenErr)); // print error message
         return -2;
     }
     //End server side socket setup
 
     // Connect to our sql db here.
-   	sql_connection = mysqlpp::Connection(mysqlpp::use_exceptions);
-	sql_connection.connect(sql_db.c_str(), sql_host.c_str(), sql_user.c_str(), sql_pass.c_str(), 3307);
+    sql_connection = mysqlpp::Connection(mysqlpp::use_exceptions);
+    sql_connection.connect(sql_db.c_str(), sql_host.c_str(), sql_user.c_str(), sql_pass.c_str(), 3307);
 
     //Server loop waiting for connections and messages
     while (!quit) {
@@ -891,7 +948,7 @@ int main() {
             conn = accept(tcp_socket, (struct sockaddr*)NULL, NULL); // Accepts new connection and stores fd in conn
             if (conn >= 0) { // Connection isnt null?
                 //Store connections in array
-            	puts("Got a new connection");
+                puts("Got a new connection");
                 Session *ptr = (Session*)malloc(sizeof(Session)*(n_connections+1)); //expand current size of array to accomodate for new connection
                 if (ptr) { // ? 
                     memcpy(ptr, connections, sizeof(Session)*n_connections); //copy current array of sessions to ptr
@@ -907,16 +964,16 @@ int main() {
         char buffer[2000];
         for (int x = 0; x < n_connections; ++x) {
             const int len = recv(connections[x].get_sockfd(), (void*)buffer, sizeof(buffer)-1, MSG_DONTWAIT); //check for message received
-			const int err = errno; // save error #
-			if (errno != 11) printf("%i: %s\n", errno, strerror(err)); // print error message
+            const int err = errno; // save error #
+            if (errno != 11) printf("%i: %s\n", errno, strerror(err)); // print error message
             if (len > 0) { // We got a message
                 buffer[len] = 0;
                 printf("Message Received\n");
-            	//printf("Got msg: %s\n", buffer);
+                //printf("Got msg: %s\n", buffer);
                 handle_message(buffer, len, &connections[x]); // pass address of appropriate session array index
             } else if (len == 0) { // Our client disconnected
-            	printf("Client %i disconnected\n",x);
-            	if (n_connections > 1) {
+                printf("Client %i disconnected\n",x);
+                if (n_connections > 1) {
                     connections[x] = connections[n_connections-1];
                 }
                 n_connections--;
@@ -929,5 +986,7 @@ int main() {
 
     free(connections);
     close(tcp_socket);
+
+    return 0;
 }
 
