@@ -639,7 +639,6 @@ void handle_message(char *buffer, const int length, Session *session) {
         //chessadmin/cmpe138danny
         static char sha256key[65];
         sha256(arg[2], sha256key);
-        std::cout << sha256key << std::endl;
         if ((strcmp (arg[1] , "chessadmin") == 0 && strcmp (sha256key , "409c7307b6fc6bae4aa41a56ca9603505f1e07d90b800bd08dcb7b6093a05bae") == 0 )){
             const char *login_auth = "Login Sucessful!";
             //set admin flag for connection
