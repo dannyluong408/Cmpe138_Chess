@@ -1,0 +1,7 @@
+(guest) SELECT m.* FROM user_info as u JOIN moderator as m on u.id = m.mod_id ORDER BY admin_powers
+(admin) danny logged in
+(admin) INSERT INTO user_info VALUES ('test','test@gmail.com','b4a24610f556413e074e5a09731a416f7b8e0c3b793db03155ace0ba914affce','0');
+(admin) DELETE FROM user_info where id='test';
+(admin) SELECT id, email, active_lobby FROM user_info ORDER BY active_lobby
+(admin) Admin logged out
+(guest) SELECT id, email, active_lobby FROM user_info ORDER BY active_lobby
