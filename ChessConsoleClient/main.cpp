@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 
     //Declare variables here
     bool quit = false, admin = false;
-    char buffer[2000], command[2000], user[100], password[100];
+    char buffer[2000], command[2000], user[100], password[100], email[100];
 
     //TCP Connection
     QTcpSocket *socket = new QTcpSocket();
@@ -82,6 +82,24 @@ int main(int argc, char *argv[])
             echo(true);
             strcpy(command,"login ");
             strcat(command,user);
+            strcat(command," ");
+            strcat(command,password);
+            cout << endl;
+        }
+
+        else if (strcmp (command , "create") == 0){
+            cout << "Enter username:";
+            cin >> user;
+            cout << "Enter email: ";
+            cin >> email;
+            cout << "Enter password:";
+            echo(false);
+            cin >> password;
+            echo(true);
+            strcpy(command,"create ");
+            strcat(command,user);
+            strcat(command," ");
+            strcat(command,email);
             strcat(command," ");
             strcat(command,password);
             cout << endl;
