@@ -505,11 +505,11 @@ void handle_message(char *buffer, const int length, Session *session) {
                     write(session->get_sockfd(), none_found, strlen(none_found) + 1);
                     goto end;
                 }
-                bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%8s %8s %8s %9s %10s %15s %19s %4s\n",
+                bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%11s %8s %8s %11s %11s %15s %19s %11s\n",
                     "match_id", "avg_movetime", "match_length", "replay_id", "elo_change", "winner", "date_time", "l_id");
  
                 for (int x = 0; x < result.num_rows(); x++) {
-                    bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%8i %8s %8s %9i %10i %15s %19s %4i\n", (int)(result[x]["match_id"]),
+                    bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%11i %8s %8s %11i %11i %15s %19s %11i\n", (int)(result[x]["match_id"]),
                         std::string(result[x]["avg_movetime"]).c_str(), std::string(result[x]["match_length"]).c_str(), (int)(result[x]["replay_id"]), (int)(result[x]["elo_change"]),
                         std::string(result[x]["winner"]).c_str(), std::string(result[x]["date_time"]).c_str(), (int)(result[x]["l_id"]));
                 }
