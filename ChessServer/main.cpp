@@ -22,6 +22,7 @@ mysqlpp::Connection sql_connection;
 std::string sql_db = "chess", sql_host = "localhost", sql_user = "chess", sql_pass = "gamer123";
 bool quit = false;
 
+//application logging function
 void log_query(const std::string query, const bool admin) {
 	if (!logfile) return;
 	if (admin) {
