@@ -3,14 +3,14 @@ SET foreign_key_checks = 0;
 -- create database chess;
 use chess;
  
- drop table gameboard_type;
- drop table developer;
- drop table lobby_stats;
- drop table moderator;
- drop table game_history;
- drop table player;
- drop table user_info;
- drop table lobby;
+ drop table if exists gameboard_type;
+ drop table if exists developer;
+ drop table if exists lobby_stats;
+ drop table if exists moderator;
+ drop table if exists game_history;
+ drop table if exists player;
+ drop table if exists user_info;
+ drop table if exists lobby;
  
 create table lobby(
         lobby_id        integer not null,
