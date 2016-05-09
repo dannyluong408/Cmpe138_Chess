@@ -38,7 +38,6 @@ void sig_handler(const int signum) {
     {
         //Closes all connections before exit
         printf("SIGINT Received, Closing\n");
-		fclose(logfile);
         quit = true;
     }
 }
@@ -1249,6 +1248,6 @@ int main() {
 
     free(connections);
     close(tcp_socket);
-
+    fclose(logfile);
     return 0;
 }
