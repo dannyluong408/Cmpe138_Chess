@@ -110,51 +110,10 @@ void handle_message(char *buffer, const int length, Session *session) {
     if ( strcmp( arg[0] , "query") == 0 && (count == 2 || count == 3 || count == 4)){
         const char *none_found = "No entries found!";
 
-        //Sample Test Query
-        if ( strcmp (arg[1] , "test") == 0 && count == 2){
-            testquery:
-            int bufferPos = 0;
-            mysqlpp::Query name_query = sql_connection.query();
-            name_query << "SELECT * FROM test WHERE wins > 10";
-            try {
-                mysqlpp::StoreQueryResult result = name_query.store();
-                if (result.num_rows() == 0){
-                    write(session->get_sockfd(), none_found, strlen(none_found)+1);
-                    goto end;
-                }
-                bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer) - bufferPos, "%15s %8s %8s\n", "name", "games", "wins");
-
-                for (int x = 0; x < result.num_rows(); x++) {
-                    bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos,"%15s %8i %8i\n", std::string(result[x]["name"]).c_str(), (int)result[x]["games"], (int)result[x]["wins"]);
-                }
-                write(session->get_sockfd(), (void*)queryBuffer, bufferPos+1);
-            }
-             catch (mysqlpp::BadQuery queryErr) { //Should not happen?
-                char errBuffer[2048];
-                snprintf(errBuffer, sizeof(errBuffer), "SQL reported bad query: %s. Attempting reconnect...", sql_connection.error());
-                puts(errBuffer);
-                std::cout << "Query error: " << queryErr.errnum() << std::endl;
-                write(session->get_sockfd(), "Query Error. Try Again", 23);
-
-            }
-            catch (mysqlpp::ConnectionFailed badCon){
-                     try {
-                        sql_connection.connect(sql_db.c_str(), sql_host.c_str(), sql_user.c_str(), sql_pass.c_str(), 3307);
-                        puts("Successfully reconnected to SQL server.");
-                        goto testquery;
-                    }
-                    catch (mysqlpp::ConnectionFailed sql_error) {
-                        std::string error = "SQL reconnect error: "; 
-                        error += sql_error.what();
-                        puts(error.c_str());
-                        write(session->get_sockfd(), "Connection Error", 17);
-                    }
-            }
-        }
-        //End of Test Query
+        
 
         //query stats "name" (returns whole row of user_info for that name)
-        else if ( strcmp (arg[1] , "stats") == 0 && count == 3){  // query stats "name"
+        if ( strcmp (arg[1] , "stats") == 0 && count == 3){  // query stats "name"
             test2query:
             int bufferPos = 0;
             mysqlpp::Query name_query = sql_connection.query();
