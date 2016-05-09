@@ -17,9 +17,19 @@
 #include "session.hpp"
 
 //global variables
+FILE *logfile = NULL;
 mysqlpp::Connection sql_connection;
 std::string sql_db = "chess", sql_host = "localhost", sql_user = "chess", sql_pass = "gamer123";
 bool quit = false;
+
+void log_query(const std::string query, const bool admin) {
+	if (!logfile) return;
+	if (admin) {
+		fprintf(logfile, "(admin) %s\n", query.c_str());
+	} else {
+		fputs(query.c_str(), logfile);
+	}
+}
 
 //Catchs exit signal to close connections before program closes
 void sig_handler(const int signum) { 
@@ -28,6 +38,7 @@ void sig_handler(const int signum) {
     {
         //Closes all connections before exit
         printf("SIGINT Received, Closing\n");
+		fclose(logfile);
         quit = true;
     }
 }
@@ -932,6 +943,7 @@ void handle_message(char *buffer, const int length, Session *session) {
             std::cout << "INSERT INTO user_info VALUES ('" << arg[1] <<"','"<< arg[2] << "','" << passwd << "','0')"<< ";" << std::endl;
             create_query << "INSERT INTO user_info VALUES ('"<<arg[1] <<"','"<< arg[2] << "','" << passwd << "','0')"<< ";";
             create_query.execute();
+			log_query(create_query.str(), session->get_permissions());
         }
         catch (mysqlpp::BadQuery er) { // handle any connection or
         // query errors that may come up
@@ -987,6 +999,7 @@ void handle_message(char *buffer, const int length, Session *session) {
 
             insert_query << "INSERT INTO "<< arg[1] << " VALUES " << rawInsert << ";";
             insert_query.execute();
+			log_query(insert_query.str(), session->get_permissions());
         }
         catch (mysqlpp::BadQuery er) { // handle any connection or
         // query errors that may come up
@@ -1060,6 +1073,7 @@ void handle_message(char *buffer, const int length, Session *session) {
                 update_query << "UPDATE "<< arg[1] << " SET " << ";";
             }
             update_query.execute();
+			log_query(update_query.str(), session->get_permissions());
         }
         catch (mysqlpp::BadQuery er) { // handle any connection or
         // query errors that may come up
@@ -1118,6 +1132,7 @@ void handle_message(char *buffer, const int length, Session *session) {
                 delete_query << "DELETE FROM "<< arg[1] << ";";
             }
             delete_query.execute();
+			log_query(delete_query.str(), session->get_permissions());
         }
         catch (mysqlpp::BadQuery er) { // handle any connection or
         // query errors that may come up
@@ -1156,8 +1171,10 @@ void handle_message(char *buffer, const int length, Session *session) {
 int main() {
     //Sig Handler Error Check
     if (signal(SIGINT, sig_handler) == SIG_ERR)
-        printf("\ncan't catch SIGINT\n");
-
+        printf("Can't catch SIGINT\n");
+	if (!(logfile = fopen("query.log", "a"))) 
+		printf("Log file failed to open.\n");
+		
     //Set up server side socket
     int tcp_socket = socket(AF_INET, SOCK_STREAM | O_NONBLOCK, 0);
     Session *connections = NULL;
@@ -1235,4 +1252,3 @@ int main() {
 
     return 0;
 }
-
