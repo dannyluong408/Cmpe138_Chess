@@ -97,7 +97,7 @@ void handle_message(char *buffer, const int length, Session *session) {
  
 
     //Query Commands 
-    if ( strcmp( arg[0] , "query") == 0 && (count == 2 || count == 3)){
+    if ( strcmp( arg[0] , "query") == 0 && (count == 2 || count == 3 || count == 4)){
         const char *none_found = "No entries found!";
 
         //Sample Test Query
@@ -148,16 +148,16 @@ void handle_message(char *buffer, const int length, Session *session) {
             test2query:
             int bufferPos = 0;
             mysqlpp::Query name_query = sql_connection.query();
-            name_query << "SELECT * FROM user_info WHERE id = "  << mysqlpp::quote << arg[2]; // Sends Query
+            name_query << "SELECT * FROM player WHERE player_id = "  << mysqlpp::quote << arg[2]; // Sends Query
             try {
                 mysqlpp::StoreQueryResult result = name_query.store();
                 if (result.num_rows() == 0){
                     write(session->get_sockfd(), none_found, strlen(none_found)+1);
                     goto end;
                 }
-                bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer) - bufferPos, "%15s %8s %64s %8s\n", "id", "email", "password","active_lobby");
+                bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer) - bufferPos, "%25s %11s %12s %6s %16s\n", "player_id", "skill", "player_since", "streak" ,"past_punishments");
                 for (int x = 0; x < result.num_rows(); x++) {
-                    bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos,"%15s %8i %64s %8i\n", std::string(result[x]["name"]).c_str(), (int)result[x]["games"],std::string(result[x]["password"]).c_str(), (int)result[x]["wins"]);
+                    bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos,"%25s %11i %12s %6s %16i\n", std::string(result[x]["player_id"]).c_str(), (int)result[x]["skill"],std::string(result[x]["player_since"]).c_str(), std::string(result[x]["streak"]).c_str(), (int)result[x]["past_punishments"]);
                 }
                 write(session->get_sockfd(), (void*)queryBuffer, bufferPos+1);
             }
@@ -538,6 +538,246 @@ void handle_message(char *buffer, const int length, Session *session) {
         }
         //End Game History
 
+
+        else if (strcmp (arg[1] , "lobby") == 0 && strcmp (arg[3] ,"boards") == 0  && count == 4){ //edit these params to fit needs
+            lobbyboards: //change this name
+            int bufferPos = 0; //keep
+            mysqlpp::Query name_query = sql_connection.query(); // keep
+           
+            std::cout << arg[2] << std::endl;
+            // Edit most stuff here
+            name_query << "SELECT g.* FROM gameboard_type as g join lobby as l on g.lobby_id = l.lobby_id WHERE l.lobby_id = '"  << arg[2] << "';"; // Sends Query
+            std::cout << name_query << std::endl;
+            try {
+                mysqlpp::StoreQueryResult result = name_query.store();
+                if (result.num_rows() == 0){
+                    write(session->get_sockfd(), none_found, strlen(none_found)+1);
+                    goto end;
+                }
+                bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%15s %8s %8s %15s %15s\n", "name", "lobby_id", "timer", "board_color", "piece_color");
+
+                for (int x = 0; x < result.num_rows(); x++) {
+                    bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%15s %8i %8s %15s %15s\n", std::string(result[x]["name"]).c_str(),
+                        (int)(result[x]["lobby_id"]), std::string(result[x]["timer"]).c_str(), std::string(result[x]["board_color"]).c_str(),
+                        std::string(result[x]["piece_color"]).c_str());
+                write(session->get_sockfd(), (void*)queryBuffer, bufferPos+1);
+                }
+            //To here
+
+            //Catch stuff leave alone same for every query
+            }
+            catch (mysqlpp::BadQuery queryErr) { //Should not happen?
+                char errBuffer[2048];
+                snprintf(errBuffer, sizeof(errBuffer), "SQL reported bad query: %s. Attempting reconnect...", sql_connection.error());
+                puts(errBuffer);
+                std::cout << "Query error: " << queryErr.errnum() << std::endl;
+                write(session->get_sockfd(), "Query Error. Try Again", 23);
+            }
+            catch (mysqlpp::ConnectionFailed badCon){
+                     try {
+                        sql_connection.connect(sql_db.c_str(), sql_host.c_str(), sql_user.c_str(), sql_pass.c_str(), 3307);
+                        puts("Successfully reconnected to SQL server.");
+                        goto lobbyboards;
+                    }
+                    catch (mysqlpp::ConnectionFailed sql_error) {
+                        std::string error = "SQL reconnect error: ";
+                        error += sql_error.what();
+                        puts(error.c_str());
+                        write(session->get_sockfd(), "Connection Error", 17);
+                    }
+            }
+        //End
+        }
+
+        else if ( strcmp (arg[1] , "elo") == 0 && count == 3){ //edit these params to fit needs
+            highestelo: //change this name
+            int bufferPos = 0; //keep
+            mysqlpp::Query name_query = sql_connection.query(); // keep
+           
+            // Edit most stuff here
+            name_query << "SELECT player_id , skill FROM chess.player WHERE skill = "  << mysqlpp::quote << arg[2]; // Sends Query
+            try {
+                mysqlpp::StoreQueryResult result = name_query.store();
+                if (result.num_rows() == 0){
+                    write(session->get_sockfd(), none_found, strlen(none_found)+1);
+                    goto end;
+                }
+                bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer) - bufferPos, "%15s %8s\n", "player_id", "skill");
+                for (int x = 0; x < result.num_rows(); x++) {
+                    bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos,"%15s %8i\n", std::string(result[x]["player_id"]).c_str(), (int)result[x]["skill"]);
+                }
+                write(session->get_sockfd(), (void*)queryBuffer, bufferPos+1);
+            }
+            //To here
+ 
+            //Catch stuff leave alone same for every query
+            catch (mysqlpp::BadQuery queryErr) { //Should not happen?
+                char errBuffer[2048];
+                snprintf(errBuffer, sizeof(errBuffer), "SQL reported bad query: %s. Attempting reconnect...", sql_connection.error());
+                puts(errBuffer);
+                std::cout << "Query error: " << queryErr.errnum() << std::endl;
+                write(session->get_sockfd(), "Query Error. Try Again", 23);
+            }
+            catch (mysqlpp::ConnectionFailed badCon){
+                     try {
+                        sql_connection.connect(sql_db.c_str(), sql_host.c_str(), sql_user.c_str(), sql_pass.c_str(), 3307);
+                        puts("Successfully reconnected to SQL server.");
+                        goto highestelo;
+                    }
+                    catch (mysqlpp::ConnectionFailed sql_error) {
+                        std::string error = "SQL reconnect error: ";
+                        error += sql_error.what();
+                        puts(error.c_str());
+                        write(session->get_sockfd(), "Connection Error", 17);
+                    }
+            }
+            //End
+ 
+        }
+
+        else if ( strcmp (arg[1] , "winlongmatch") == 0 && count == 2){ //edit these params to fit needs
+            winnerlongestmatch: //change this name
+            int bufferPos = 0; //keep
+            mysqlpp::Query name_query = sql_connection.query(); // keep
+           
+            // Edit most stuff here
+            name_query << "SELECT * FROM chess.player WHERE player_id LIKE (SELECT winner FROM chess.game_history WHERE match_length = (SELECT max(match_length) FROM chess.game_history))"; // Sends Query
+
+            try {
+                mysqlpp::StoreQueryResult result = name_query.store();
+                if (result.num_rows() == 0){
+                    write(session->get_sockfd(), none_found, strlen(none_found)+1);
+                    goto end;
+                }
+                bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer) - bufferPos, "%15s %8s\n", "player_id", "skill");
+                for (int x = 0; x < result.num_rows(); x++) {
+                    bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos,"%15s %8i %8i\n", std::string(result[x]["player_id"]).c_str(), (int)result[x]["skill"]);
+                }
+                write(session->get_sockfd(), (void*)queryBuffer, bufferPos+1);
+            }
+            //To here
+ 
+            //Catch stuff leave alone same for every query
+            catch (mysqlpp::BadQuery queryErr) { //Should not happen?
+                char errBuffer[2048];
+                snprintf(errBuffer, sizeof(errBuffer), "SQL reported bad query: %s. Attempting reconnect...", sql_connection.error());
+                puts(errBuffer);
+                std::cout << "Query error: " << queryErr.errnum() << std::endl;
+                write(session->get_sockfd(), "Query Error. Try Again", 23);
+            }
+            catch (mysqlpp::ConnectionFailed badCon){
+                     try {
+                        sql_connection.connect(sql_db.c_str(), sql_host.c_str(), sql_user.c_str(), sql_pass.c_str(), 3307);
+                        puts("Successfully reconnected to SQL server.");
+                        goto winnerlongestmatch;
+                    }
+                    catch (mysqlpp::ConnectionFailed sql_error) {
+                        std::string error = "SQL reconnect error: ";
+                        error += sql_error.what();
+                        puts(error.c_str());
+                        write(session->get_sockfd(), "Connection Error", 17);
+                    }
+            }
+            //End
+        }
+
+        else if ( strcmp (arg[1] , "lobbystats") == 0 && count == 3){ //edit these params to fit needs
+            lobbystats: //change this name
+            int bufferPos = 0; //keep
+            mysqlpp::Query name_query = sql_connection.query(); // keep
+           
+            // Edit most stuff here
+            name_query << "SELECT * FROM lobby_stats WHERE stat_id = "  << mysqlpp::quote << arg[2]; // Sends Query
+            try {
+                mysqlpp::StoreQueryResult result = name_query.store();
+                if (result.num_rows() == 0){
+                    write(session->get_sockfd(), none_found, strlen(none_found)+1);
+                    goto end;
+                }
+                bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%7s %14s %12s %12s %12s %18s %12s\n",
+                    "stat_id", "games_in_lobby", "avg_gametime", "pieces_taken", "avg_movetime", "avg_moves_per_game", "users_joined");
+ 
+                for (int x = 0; x < result.num_rows(); x++) {
+                    bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos, "%7i %14i %12s %12i %12s %18f %12i\n", (int)(result[x]["stat_id"]),
+                        (int)(result[x]["games_in_lobby"]), std::string(result[x]["avg_gametime"]).c_str(), (int)(result[x]["pieces_taken"]), std::string(result[x]["avg_movetime"]).c_str(),
+                        (float)(result[x]["avg_moves_per_game"]), (int)(result[x]["users_joined"]));
+                }
+                write(session->get_sockfd(), (void*)queryBuffer, bufferPos+1);
+            }
+            //To here
+ 
+            //Catch stuff leave alone same for every query
+            catch (mysqlpp::BadQuery queryErr) { //Should not happen?
+                char errBuffer[2048];
+                snprintf(errBuffer, sizeof(errBuffer), "SQL reported bad query: %s. Attempting reconnect...", sql_connection.error());
+                puts(errBuffer);
+                std::cout << "Query error: " << queryErr.errnum() << std::endl;
+                write(session->get_sockfd(), "Query Error. Try Again", 23);
+            }
+            catch (mysqlpp::ConnectionFailed badCon){
+                     try {
+                        sql_connection.connect(sql_db.c_str(), sql_host.c_str(), sql_user.c_str(), sql_pass.c_str(), 3307);
+                        puts("Successfully reconnected to SQL server.");
+                        goto lobbystats;
+                    }
+                    catch (mysqlpp::ConnectionFailed sql_error) {
+                        std::string error = "SQL reconnect error: ";
+                        error += sql_error.what();
+                        puts(error.c_str());
+                        write(session->get_sockfd(), "Connection Error", 17);
+                    }
+            }
+            //End
+ 
+        }
+
+
+        else if ( strcmp (arg[1] , "punish") == 0 && count == 3){ //edit these params to fit needs
+            playerpunishquery: //change this name
+            int bufferPos = 0; //keep
+            mysqlpp::Query name_query = sql_connection.query(); // keep
+           
+            // Edit most stuff here
+            name_query << "SELECT player_id,past_punishments FROM chess.player WHERE past_punishments = "  << mysqlpp::quote << arg[2]; // Sends Query
+            try {
+                mysqlpp::StoreQueryResult result = name_query.store();
+                if (result.num_rows() == 0){
+                    write(session->get_sockfd(), none_found, strlen(none_found)+1);
+                    goto end;
+                }
+                bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer) - bufferPos, "%15s %8s\n", "player_id", "past_punishments");
+                for (int x = 0; x < result.num_rows(); x++) {
+                    bufferPos += snprintf(&queryBuffer[bufferPos], sizeof(queryBuffer)-bufferPos,"%15s %8i\n", std::string(result[x]["player_id"]).c_str(), (int)result[x]["past_punishments"]);
+                }
+                write(session->get_sockfd(), (void*)queryBuffer, bufferPos+1);
+            }
+            //To here
+ 
+            //Catch stuff leave alone same for every query
+            catch (mysqlpp::BadQuery queryErr) { //Should not happen?
+                char errBuffer[2048];
+                snprintf(errBuffer, sizeof(errBuffer), "SQL reported bad query: %s. Attempting reconnect...", sql_connection.error());
+                puts(errBuffer);
+                std::cout << "Query error: " << queryErr.errnum() << std::endl;
+                write(session->get_sockfd(), "Query Error. Try Again", 23);
+            }
+            catch (mysqlpp::ConnectionFailed badCon){
+                     try {
+                        sql_connection.connect(sql_db.c_str(), sql_host.c_str(), sql_user.c_str(), sql_pass.c_str(), 3307);
+                        puts("Successfully reconnected to SQL server.");
+                        goto playerpunishquery;
+                    }
+                    catch (mysqlpp::ConnectionFailed sql_error) {
+                        std::string error = "SQL reconnect error: ";
+                        error += sql_error.what();
+                        puts(error.c_str());
+                        write(session->get_sockfd(), "Connection Error", 17);
+                    }
+            }
+            //End
+ 
+        }
+
         /*Template
         else if ( strcmp (arg[1] , "stats") == 0 && count == 3){ //edit these params to fit needs
             test2query: //change this name
@@ -561,7 +801,6 @@ void handle_message(char *buffer, const int length, Session *session) {
             //To here
 
             //Catch stuff leave alone same for every query
-            }
             catch (mysqlpp::BadQuery queryErr) { //Should not happen?
                 char errBuffer[2048];
                 snprintf(errBuffer, sizeof(errBuffer), "SQL reported bad query: %s. Attempting reconnect...", sql_connection.error());
@@ -598,6 +837,7 @@ void handle_message(char *buffer, const int length, Session *session) {
         if (session->get_permissions() == true){
         const char *help_message =  "Help Menu:\n"
                                     "help -- opens help menu\n"
+                                    "query stats [playername] -- returns stats of a player ex: query stats damarsh\n"
                                     "query users -- returns info for all users\n"
                                     "query players -- returns info for all players\n"
                                     "query mods -- returns info for all mods\n"
@@ -606,6 +846,9 @@ void handle_message(char *buffer, const int length, Session *session) {
                                     "query lobby_stats -- returns stats of all lobbies\n"
                                     "query gameboard_type -- returns info for all gameboard types\n"
                                     "query game_history -- returns all game history\n"
+                                    "query elo [elo] -- returns players with that elo ex: query elo 46\n"
+                                    "query lobbystats [lobbyid] -- returns lobbystats for lobbies with [lobbyid] ex: query lobbystats 1\n"
+                                    "query punish [#] -- returns players with punishment # ex: query punish 1\n"
                                     "login -- prompts for admin user and password to login\n"
                                     "Admin Commands:\n"
                                     "insert [table] \"[values]\" -- ex: insert user_info \"('id','email','password','active_lobby')\"\n"
@@ -618,6 +861,7 @@ void handle_message(char *buffer, const int length, Session *session) {
         else {
         const char *help_message2 = "Help Menu:\n"
                                     "help -- opens help menu\n"
+                                    "query stats [playername] -- returns stats of a player ex: query stats damarsh\n"
                                     "query users -- returns info for all users\n"
                                     "query players -- returns info for all players\n"
                                     "query mods -- returns info for all mods\n"
@@ -626,6 +870,9 @@ void handle_message(char *buffer, const int length, Session *session) {
                                     "query lobby_stats -- returns stats of all lobbies\n"
                                     "query gameboard_type -- returns info for all gameboard types\n"
                                     "query game_history -- returns all game history\n"
+                                    "query elo [elo] -- returns players with that elo ex: query elo 46\n"
+                                    "query lobbystats [lobbyid] -- returns lobbystats for lobbies with [lobbyid] ex: query lobbystats 1\n"
+                                    "query punish [#] -- returns players with punishment # ex: query punish 1\n"
                                     "login -- prompts for admin user and password to login\n"                               
                                     "quit -- quits program";
         write(session->get_sockfd(), (void*)help_message2, strlen(help_message2)+1);
