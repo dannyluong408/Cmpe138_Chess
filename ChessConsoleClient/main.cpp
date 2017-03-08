@@ -10,7 +10,7 @@
 
 using namespace std;
 
-// Disables echo for password
+// Disables echo for password on windows
 void echo(bool on = true) {
   DWORD mode;
   HANDLE hConIn = GetStdHandle(STD_INPUT_HANDLE);
