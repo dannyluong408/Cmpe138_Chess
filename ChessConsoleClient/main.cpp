@@ -1,132 +1,119 @@
-#include <QCoreApplication>
-#include <string>
 #include <stdio.h>
 #include <stdlib.h>
-#include <iostream>
+#include <windows.h>
+#include <QCoreApplication>
+#include <QThread>
 #include <QtNetwork/QTcpServer>
 #include <QtNetwork/QTcpSocket>
-#include <QThread>
-#include <windows.h>
+#include <iostream>
+#include <string>
 
 using namespace std;
 
-//Disables echo for password
-void echo( bool on = true ){
-  DWORD  mode;
-  HANDLE hConIn = GetStdHandle( STD_INPUT_HANDLE );
-  GetConsoleMode( hConIn, &mode );
-  mode = on
-       ? (mode |   ENABLE_ECHO_INPUT )
-       : (mode & ~(ENABLE_ECHO_INPUT));
-  SetConsoleMode( hConIn, mode );
+// Disables echo for password
+void echo(bool on = true) {
+  DWORD mode;
+  HANDLE hConIn = GetStdHandle(STD_INPUT_HANDLE);
+  GetConsoleMode(hConIn, &mode);
+  mode = on ? (mode | ENABLE_ECHO_INPUT) : (mode & ~(ENABLE_ECHO_INPUT));
+  SetConsoleMode(hConIn, mode);
 }
 
-//Eats newline from fgets
+// Eats newline from fgets
 void chomp(char *s) {
-    while(*s && *s != '\n') s++;
-    *s = 0;
+  while (*s && *s != '\n') s++;
+  *s = 0;
 }
 
-int main(int argc, char *argv[])
-{
-    QCoreApplication a(argc, argv);
+int main(int argc, char *argv[]) {
+  QCoreApplication a(argc, argv);
 
-    //Declare variables here
-    bool quit = false, admin = false;
-    char buffer[2000], command[2000], user[100], password[100], email[100];
+  // Declare variables here
+  bool quit = false, admin = false;
+  char buffer[2000], command[2000], user[100], password[100], email[100];
 
-    //TCP Connection
-    QTcpSocket *socket = new QTcpSocket();
-    socket->connectToHost("sniperdad.com", 4000);
+  // TCP Connection
+  QTcpSocket *socket = new QTcpSocket();
+  socket->connectToHost("sniperdad.com", 4000);
 
-    //Checks for connection
-    if(!socket->waitForConnected(5000))
-    {
-        qDebug() << "Error: " << socket->errorString();
-        cout << "Exiting Program";
-        return a.exec();
-    }
-    else{
-        cout << "Connected to server!" << endl;
-    }
-
-    cout << "Welcome Guest, type \"help\" for a list of commands\n";
-
-    while(!quit){
-
-        //Test Admin Stuff, Probably move to server side
-        if (admin == false) {
-            cout << "<Guest>";
-        }
-        else {
-            cout << "<Admin>";
-        }
-        //End Test admin Stuff
-
-        //Grabs user input
-        fseek(stdin,0,SEEK_END); //Resets stdin to beginning
-        fgets(command,sizeof(command),stdin); // Grabs whole line of command
-        chomp(command); // Removes newline from command
-
-        //Client side commands
-        if (strcmp (command , "quit") == 0){
-            quit = true;
-            break;
-        }
-        else if (strcmp (command , "login") == 0){
-            cout << "Enter your username:";
-            cin >> user;
-            cout << "Enter your password:";
-            echo(false);
-            cin >> password;
-            echo(true);
-            strcpy(command,"login ");
-            strcat(command,user);
-            strcat(command," ");
-            strcat(command,password);
-            cout << endl;
-        }
-
-        else if (strcmp (command , "create") == 0){
-            cout << "Enter username:";
-            cin >> user;
-            cout << "Enter email: ";
-            cin >> email;
-            cout << "Enter password:";
-            echo(false);
-            cin >> password;
-            echo(true);
-            strcpy(command,"create ");
-            strcat(command,user);
-            strcat(command," ");
-            strcat(command,email);
-            strcat(command," ");
-            strcat(command,password);
-            cout << endl;
-        }
-
-//      cout << ":" << command << ":" << endl; //Test Stuff: Shows what were sending to socket
-
-        //sends data to socket and waits for response
-        socket->write(command);
-        socket->flush();
-        socket->waitForReadyRead(-1);
-        socket->read(buffer, sizeof(buffer));
-        cout << buffer << "\n";
-
-        //Test Admin Stuff, Probably move to server side
-        if (strcmp( buffer , "Login Sucessful!") == 0){
-            admin = true;
-        }
-        if (strcmp( buffer , "Logged Out!") == 0){
-            admin = false;
-        }
-        //End Test admin Stuff
-
-    }
-
-    socket->close();
+  // Checks for connection
+  if (!socket->waitForConnected(5000)) {
+    qDebug() << "Error: " << socket->errorString();
+    cout << "Exiting Program";
     return a.exec();
+  } else {
+    cout << "Connected to server!" << endl;
+  }
+
+  cout << "Welcome Guest, type \"help\" for a list of commands\n";
+
+  while (!quit) {
+    // Test Admin Stuff, Probably move to server side
+    if (admin == false) {
+      cout << "<Guest>";
+    } else {
+      cout << "<Admin>";
+    }
+    // End Test admin Stuff
+
+    // Grabs user input
+    fseek(stdin, 0, SEEK_END);               // Resets stdin to beginning
+    fgets(command, sizeof(command), stdin);  // Grabs whole line of command
+    chomp(command);                          // Removes newline from command
+
+    // Client side commands
+    if (strcmp(command, "quit") == 0) {
+      quit = true;
+      break;
+    } else if (strcmp(command, "login") == 0) {
+      cout << "Enter your username:";
+      cin >> user;
+      cout << "Enter your password:";
+      echo(false);
+      cin >> password;
+      echo(true);
+      strcpy(command, "login ");
+      strcat(command, user);
+      strcat(command, " ");
+      strcat(command, password);
+      cout << endl;
+    }
+
+    else if (strcmp(command, "create") == 0) {
+      cout << "Enter username:";
+      cin >> user;
+      cout << "Enter email: ";
+      cin >> email;
+      cout << "Enter password:";
+      echo(false);
+      cin >> password;
+      echo(true);
+      strcpy(command, "create ");
+      strcat(command, user);
+      strcat(command, " ");
+      strcat(command, email);
+      strcat(command, " ");
+      strcat(command, password);
+      cout << endl;
+    }
+
+    // sends data to socket and waits for response
+    socket->write(command);
+    socket->flush();
+    socket->waitForReadyRead(-1);
+    socket->read(buffer, sizeof(buffer));
+    cout << buffer << "\n";
+
+    // Test Admin Stuff, Probably move to server side
+    if (strcmp(buffer, "Login Sucessful!") == 0) {
+      admin = true;
+    }
+    if (strcmp(buffer, "Logged Out!") == 0) {
+      admin = false;
+    }
+    // End Test admin Stuff
+  }
+
+  socket->close();
+  return a.exec();
 }
-
-
